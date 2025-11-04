@@ -1,0 +1,27 @@
+# ===============================================
+# Archivos de Compilación de Maven y IDE
+# ===============================================
+/target/
+# La carpeta 'classes' está dentro de 'target', por lo que ya está ignorada.
+
+# Configuración del IDE (Eclipse, IntelliJ, VSCode)
+.classpath
+.project
+.settings/
+*.iml
+*.iws
+
+# Configuración de Maven local (binarios y logs)
+.mvn/
+*.log
+*.zip
+
+# ===============================================
+#  ARCHIVOS SENSIBLES Y DE BASE DE DATOS (CRÍTICO)
+# ===============================================
+
+# 1. Archivo de esquema con credenciales iniciales
+oficios_db_auto.sql
+
+# 2. Clave de acceso SSH
+*.pem

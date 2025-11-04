@@ -1,2 +1,7 @@
+com\tuproyecto\ListUsersServlet.class
+com\tuproyecto\LogoutServlet.class
+com\tuproyecto\CreateOficioServlet.class
 com\tuproyecto\HelloServlet.class
-com\tuproyecto\App.class
+com\tuproyecto\LoginServlet.class
+com\tuproyecto\ListUsersServlet$User.class
+com\tuproyecto\ManageUsersServlet.class
