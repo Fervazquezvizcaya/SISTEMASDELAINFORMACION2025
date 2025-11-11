@@ -1,30 +1,42 @@
 package com.tuproyecto;
 
-import java.io.IOException;
-import java.sql.*;
+// Importaciones necesarias para el Servlet y la gestión de la base de datos (JDBC)
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import java.io.IOException;           // Maneja errores de entrada/salida (e.g., al redirigir).
+import java.sql.Connection;           // Interfaz para gestionar la conexión a la base de datos.
+import java.sql.DriverManager;        // Gestiona los drivers y establece la conexión a la DB.
+import java.sql.PreparedStatement;    // Permite ejecutar consultas SQL precompiladas (seguridad y eficiencia).
+import java.sql.ResultSet;            // Almacena el resultado de una consulta SELECT.
+import java.sql.SQLException;         // Maneja errores relacionados con la base de datos.
+
+import jakarta.servlet.ServletException;      // Excepción base para problemas en el ciclo de vida del Servlet.
+import jakarta.servlet.annotation.WebServlet; // Anotación que mapea el Servlet a la URL "/edit-oficio".
+import jakarta.servlet.http.HttpServlet;      // Clase base para Servlets HTTP.
+import jakarta.servlet.http.HttpServletRequest; // Objeto que representa la solicitud del cliente.
+import jakarta.servlet.http.HttpServletResponse; // Objeto que permite enviar la respuesta al cliente.
+import jakarta.servlet.http.HttpSession;      // Permite manejar la sesión del usuario para la autenticación.
 
 @WebServlet("/edit-oficio")
 public class EditOficioServlet extends HttpServlet {
 
+    // Constante que define la URL de conexión a la base de datos.
     private static final String DB_URL = "jdbc:mariadb://54.242.175.198:3306/webapp_db?sslMode=disable";
 
-    // --- Lógica para CARGAR el oficio en el formulario (doGet) ---
+    /**
+     * Maneja las solicitudes GET.
+     * Propósito: Cargar los datos de un oficio específico en el formulario de edición.
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         
         HttpSession session = request.getSession(false);
+        // 1. Verificación de Seguridad: Asegura que el usuario esté autenticado.
         if (session == null || session.getAttribute("username") == null) {
             response.sendRedirect("index.html");
             return;
         }
 
+        // 2. Obtener y validar el ID del oficio desde los parámetros de la URL.
         String idParam = request.getParameter("id");
         if (idParam == null || idParam.isEmpty()) {
             response.sendRedirect("list-oficios-user?error=no_id");
@@ -35,10 +47,12 @@ public class EditOficioServlet extends HttpServlet {
         try {
             oficioId = Integer.parseInt(idParam);
         } catch (NumberFormatException e) {
+            // Redirigir si el ID no es un formato numérico válido.
             response.sendRedirect("list-oficios-user?error=invalid_id");
             return;
         }
 
+        // 3. Obtener credenciales de la base de datos desde variables de entorno.
         String dbUser = System.getenv("DB_USER");
         String dbPassword = System.getenv("DB_PASSWORD");
         
@@ -48,10 +62,11 @@ public class EditOficioServlet extends HttpServlet {
         Oficio oficio = null;
 
         try {
+            // 4. Conexión a la base de datos
             Class.forName("org.mariadb.jdbc.Driver");
             conn = DriverManager.getConnection(DB_URL, dbUser, dbPassword); 
 
-            // Se obtiene id_oficio real y numero_oficio
+            // Consulta SQL para seleccionar todos los campos del oficio por su ID.
             String sql = "SELECT id_oficio, numero_oficio, persona_dirigida, area, asunto, fecha, hash_firma FROM oficios WHERE id_oficio = ?"; 
             
             statement = conn.prepareStatement(sql);
@@ -59,7 +74,7 @@ public class EditOficioServlet extends HttpServlet {
             result = statement.executeQuery();
             
             if (result.next()) {
-                // Obtener los datos del ResultSet y usarlos en el constructor de 7 argumentos
+                // 5. Mapear los datos obtenidos de la DB al objeto Oficio.
                 oficio = new Oficio(
                     result.getInt("id_oficio"), 
                     result.getInt("numero_oficio"), 
@@ -72,18 +87,20 @@ public class EditOficioServlet extends HttpServlet {
 
                 request.setAttribute("oficio", oficio);
                 
-                // Transferir el control al formulario
+                // 6. Enviar el objeto Oficio a la vista JSP para prellenar el formulario.
                 request.getRequestDispatcher("edit_oficio.jsp").forward(request, response); 
                 
             } else {
+                // Redirigir si el ID es válido pero el oficio no existe.
                 response.sendRedirect("list-oficios-user?error=oficio_not_found");
             }
 
         } catch (SQLException | ClassNotFoundException e) {
             e.printStackTrace();
+            // Manejo de errores de conexión o consulta.
             response.sendRedirect("list-oficios-user?error=db_query_failed");
         } finally {
-            // Cierre seguro de recursos
+            // 7. Cierre seguro de todos los recursos de la base de datos.
             try {
                 if (result != null) result.close();
                 if (statement != null) statement.close();
@@ -94,16 +111,21 @@ public class EditOficioServlet extends HttpServlet {
         }
     }
 
-    // --- Lógica para ACTUALIZAR los cambios en la DB (doPost) ---
+    /**
+     * Maneja las solicitudes POST.
+     * Propósito: Recibir los datos del formulario de edición y ejecutar la actualización en la DB.
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         
         HttpSession session = request.getSession(false);
+        // 1. Verificación de Seguridad: Asegura que el usuario esté autenticado.
         if (session == null || session.getAttribute("username") == null) {
             response.sendRedirect("index.html");
             return;
         }
 
+        // 2. Obtener credenciales de la base de datos
         String dbUser = System.getenv("DB_USER");
         String dbPassword = System.getenv("DB_PASSWORD");
         
@@ -111,44 +133,44 @@ public class EditOficioServlet extends HttpServlet {
         PreparedStatement statement = null;
 
         try {
-            // Obtener el ID del oficio y los campos editables
+            // 3. Obtener el ID (clave) y los campos editables del formulario.
             int oficioId = Integer.parseInt(request.getParameter("id_oficio"));
             String personaDirigida = request.getParameter("persona_dirigida");
             String area = request.getParameter("area");
             String fecha = request.getParameter("fecha");
             String asunto = request.getParameter("asunto");
             
-            // 1. Conexión a la DB
+            // 4. Conexión a la base de datos
             Class.forName("org.mariadb.jdbc.Driver");
             conn = DriverManager.getConnection(DB_URL, dbUser, dbPassword);
             
-            // 🚨 SOLUCIÓN 1: Deshabilitar auto-commit para asegurar que la transacción se aplique
+            // INICIO DE TRANSACCIÓN: Deshabilita auto-commit para control manual.
             conn.setAutoCommit(false); 
 
-            // 2. Sentencia SQL para actualizar SOLO los campos solicitados
+            // 5. Sentencia SQL de actualización, utilizando el ID en la cláusula WHERE.
             String sql = "UPDATE oficios SET persona_dirigida=?, area=?, asunto=?, fecha=? WHERE id_oficio=?";
             
             statement = conn.prepareStatement(sql);
             
-            // 3. Asignación de parámetros (la secuencia debe ser exacta a la sentencia SQL)
+            // 6. Asignación de parámetros (debe coincidir con el orden de la sentencia SQL).
             statement.setString(1, personaDirigida);
             statement.setString(2, area);
             statement.setString(3, asunto);
             statement.setString(4, fecha);
-            statement.setInt(5, oficioId); // ID para la cláusula WHERE
+            statement.setInt(5, oficioId); // Clave primaria para la condición WHERE
             
-            // 4. Ejecución del UPDATE
+            // 7. Ejecución del UPDATE.
             statement.executeUpdate();
             
-            // 5. 🚨 SOLUCIÓN 2: Forzar la confirmación de la transacción
+            // FIN DE TRANSACCIÓN: Confirma los cambios a la base de datos (COMMIT).
             conn.commit(); 
             
-            // Redirigir de vuelta a la lista
+            // Redirigir al listado con mensaje de éxito de actualización.
             response.sendRedirect("list-oficios-user?success=updated"); 
 
         } catch (SQLException | NumberFormatException | ClassNotFoundException e) {
             e.printStackTrace();
-            // Si hay un error, intentar revertir los cambios
+            // 8. Manejo de errores: Intenta revertir la transacción (ROLLBACK).
             if (conn != null) {
                 try {
                     conn.rollback();
@@ -158,7 +180,7 @@ public class EditOficioServlet extends HttpServlet {
             }
             response.sendRedirect("list-oficios-user?error=update_failed");
         } finally {
-            // Cierre seguro de recursos
+            // 9. Cierre seguro de recursos en el bloque 'finally'.
             try {
                 if (statement != null) statement.close();
                 if (conn != null) conn.close();

@@ -10,17 +10,18 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession; // Se agregó import de HttpSession
+import jakarta.servlet.http.HttpSession; 
 import jakarta.servlet.RequestDispatcher; // Se agregó import
 
 @WebServlet("/list-users")
 public class ListUsersServlet extends HttpServlet {
 
-    // --- DATOS DE CONEXIÓN SEGUROS ---
-    private static final String DB_HOST = "54.242.175.198"; 
-    private static final String DB_NAME = "webapp_db";
-    private static final String DB_URL = "jdbc:mariadb://" + DB_HOST + ":3306/" + DB_NAME + "?sslMode=disable"; 
+    // URL de conexión a la base de datos (incluye corrección SSL/TLS)
+    private static final String DB_URL = "jdbc:mariadb://54.242.175.198:3306/webapp_db?sslMode=disable"; 
 
+    /**
+     * Propósito: Carga la lista de usuarios de la base de datos y prepara la vista del administrador.
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
@@ -28,18 +29,18 @@ public class ListUsersServlet extends HttpServlet {
         
         HttpSession session = request.getSession(false);
         
-        // --- 1. VERIFICACIÓN DE SEGURIDAD (Solo Admin) ---
+        // 1. VERIFICACIÓN DE SEGURIDAD: Expulsa al usuario si no es administrador.
         if (session == null || session.getAttribute("isAdmin") == null || !(Boolean)session.getAttribute("isAdmin")) {
             response.sendRedirect("index.html");
             return;
         }
 
-        // --- 2. OBTENER CREDENCIALES DEL ENTORNO ---
+        // 2. OBTENER CREDENCIALES: Lee las credenciales de la DB del entorno.
         String dbUser = System.getenv("DB_USER"); 
         String dbPassword = System.getenv("DB_PASSWORD");
 
+        // Fallo de seguridad: Si las variables de entorno no están cargadas.
         if (dbUser == null || dbPassword == null) {
-            // Error de configuración (el que ya resolviste en /etc/default/tomcat10)
             request.getRequestDispatcher("admin.jsp?error=db_config").forward(request, response);
             return;
         }
@@ -48,6 +49,7 @@ public class ListUsersServlet extends HttpServlet {
         Connection conn = null;
 
         try {
+            // 3. CONEXIÓN Y CONSULTA: Establecer conexión y ejecutar SELECT.
             Class.forName("org.mariadb.jdbc.Driver");
             conn = DriverManager.getConnection(DB_URL, dbUser, dbPassword);
 
@@ -55,6 +57,7 @@ public class ListUsersServlet extends HttpServlet {
             Statement statement = conn.createStatement();
             ResultSet result = statement.executeQuery(sql);
 
+            // 4. MAPEO DE DATOS: Iterar sobre el resultado y llenar la lista.
             while (result.next()) {
                 int id = result.getInt("id_usuario");
                 String name = result.getString("nombre_usuario");
@@ -62,15 +65,19 @@ public class ListUsersServlet extends HttpServlet {
                 userList.add(new User(id, name, isAdmin));
             }
             
-            // 3. 🚨 CLAVE: Establecer la lista en el REQUEST y USAR FORWARD
+            // 5. PREPARAR VISTA: Adjuntar la lista de usuarios a la solicitud.
             request.setAttribute("userList", userList);
+            
+            // 6. TRANSFERENCIA: Usar forward para enviar los datos a admin.jsp sin cambiar la URL.
             request.getRequestDispatcher("admin.jsp").forward(request, response);
             
         } catch (SQLException | ClassNotFoundException e) {
             e.printStackTrace();
+            // Fallo en la base de datos, notificar al administrador.
             request.setAttribute("dbError", "Error al conectar o consultar la base de datos.");
             request.getRequestDispatcher("admin.jsp?error=db_query").forward(request, response);
         } finally {
+            // 7. CIERRE SEGURO: Cerrar la conexión a la base de datos.
             if (conn != null) {
                 try {
                     conn.close();
@@ -81,7 +88,7 @@ public class ListUsersServlet extends HttpServlet {
         }
     }
     
-    // Clase auxiliar (Debe estar en este archivo o en un archivo User.java separado)
+    // Clase auxiliar para guardar los datos de un usuario (Modelo de datos)
     public class User {
         private int id;
         private String name;

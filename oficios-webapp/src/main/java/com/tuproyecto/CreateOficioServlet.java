@@ -16,10 +16,9 @@ import jakarta.servlet.http.HttpSession;
 @WebServlet("/create-oficio")
 public class CreateOficioServlet extends HttpServlet {
 
-    // --- Datos de Conexión Seguros (Solo Host/Nombre) ---
+    // URL de conexión a MariaDB (Segura, usa corrección SSL/TLS)
     private static final String DB_HOST = "54.242.175.198"; 
     private static final String DB_NAME = "webapp_db";
-    // ⚠️ La URL ahora incluye la corrección SSL/TLS
     private static final String DB_URL = "jdbc:mariadb://" + DB_HOST + ":3306/" + DB_NAME + "?sslMode=disable";
 
     @Override
@@ -27,48 +26,48 @@ public class CreateOficioServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
         
-        // 1. Obtener la sesión y verificar la seguridad
         HttpSession session = request.getSession(false);
 
-        // --- CÓDIGO DE SEGURIDAD: Expulsar si no está autenticado ---
+        // 1. VERIFICACIÓN DE AUTENTICACIÓN: Expulsar si no hay sesión activa.
         if (session == null || session.getAttribute("username") == null) {
             response.sendRedirect("index.html");
             return;
         }
 
-        // 2. Obtener el ID del usuario de la sesión para el registro de auditoría
-        Integer userId = (Integer) session.getAttribute("userId"); 
+        // 2. OBTENER DATOS DE SESIÓN Y ROL
+        Boolean esAdmin = (Boolean) session.getAttribute("isAdmin"); 
+        Integer userId = (Integer) session.getAttribute("userId");
         
-        // 🛑 CORRECCIÓN CLAVE 1: Si el ID es null, usamos 1 como respaldo para evitar un fallo en la DB.
+        // Asignación de respaldo para evitar fallos en la DB si el ID es nulo
         if (userId == null) {
-            // Este es un caso de fallo, pero usamos el ID 1 (admin) como respaldo
             userId = 1; 
         }
 
-        // 3. Obtener los datos del formulario HTML
+        // 3. OBTENER DATOS DEL FORMULARIO
         String personaDirigida = request.getParameter("persona_dirigida");
         String area = request.getParameter("area");
         String fecha = request.getParameter("fecha");
         String asunto = request.getParameter("asunto");
         
-        // 4. Obtener credenciales seguras del entorno
+        // 4. OBTENER CREDENCIALES SEGURAS DEL ENTORNO
         String dbUser = System.getenv("DB_USER"); 
         String dbPassword = System.getenv("DB_PASSWORD");
         
+        // Verificación de configuración del entorno de DB
         if (dbUser == null || dbPassword == null) {
-             System.err.println("ERROR: Credenciales de DB no configuradas. Fallo de seguridad.");
-             // Redirigir al panel de usuario con un mensaje de error de DB
-             response.sendRedirect("user_panel.jsp?db_error=true"); 
+             System.err.println("ERROR: Credenciales de DB no configuradas.");
+             String panelRedirect = (esAdmin != null && esAdmin) ? "admin.jsp" : "user_panel.jsp";
+             response.sendRedirect(panelRedirect + "?db_error=true"); 
              return; 
         }
         
         Connection conn = null;
         try {
-            // 5. Conectarse a la base de datos (seguro)
+            // 5. CONEXIÓN Y EJECUCIÓN SQL
             Class.forName("org.mariadb.jdbc.Driver");
             conn = DriverManager.getConnection(DB_URL, dbUser, dbPassword); 
 
-            // 6. Sentencia SQL: Añadir id_usuario_creador
+            // Sentencia SQL: Insertar oficio y asignar el creador (userId)
             String sql = "INSERT INTO oficios (persona_dirigida, area, fecha, asunto, id_usuario_creador) VALUES (?, ?, ?, ?, ?)";
             
             PreparedStatement statement = conn.prepareStatement(sql);
@@ -76,18 +75,19 @@ public class CreateOficioServlet extends HttpServlet {
             statement.setString(2, area);
             statement.setString(3, fecha);
             statement.setString(4, asunto);
-            statement.setInt(5, userId); // El ID del usuario (ahora nunca es null)
+            statement.setInt(5, userId); // Asignación del ID del usuario logueado
 
-            // 7. Ejecutar y completar
+            // Ejecutar la inserción
             statement.executeUpdate();
 
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
-            // Redirigir al panel de usuario con mensaje de fallo
-            response.sendRedirect("user_panel.jsp?error=db"); 
+            // Si falla la DB, redirigir al panel de origen con mensaje de error
+            String panelRedirect = (esAdmin != null && esAdmin) ? "admin.jsp" : "user_panel.jsp";
+            response.sendRedirect(panelRedirect + "?error=db_op_failed"); 
             return; 
         } finally {
-            // 8. Cerrar la conexión
+            // 6. Cierre seguro de la conexión
             if (conn != null) {
                 try {
                     conn.close();
@@ -97,7 +97,8 @@ public class CreateOficioServlet extends HttpServlet {
             }
         }
         
-        // 🛑 CORRECCIÓN CLAVE 2: Redirigir a la página de usuario (user_panel.jsp)
-        response.sendRedirect("user_panel.jsp?success=oficio"); 
+        // 7. REDIRECCIÓN FINAL: Regresar al panel correcto con mensaje de éxito
+        String panelRedirect = (esAdmin != null && esAdmin) ? "list-users" : "list-oficios-user"; // Redirige al Servlet de carga de datos
+        response.sendRedirect(panelRedirect + "?success=oficio_created"); 
     }
 }

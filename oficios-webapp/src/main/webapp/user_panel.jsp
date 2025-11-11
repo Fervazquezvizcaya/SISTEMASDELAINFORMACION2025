@@ -1,4 +1,6 @@
+<%-- Directiva: Importa las clases Java List y Oficio para poder usarlas en los bloques de código Scriptlet. --%>
 <%@ page import="java.util.List, com.tuproyecto.Oficio" %>
+<%-- Directiva: Define que la respuesta es HTML y establece la codificación UTF-8 para evitar problemas de caracteres. --%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html lang="es">
@@ -31,7 +33,6 @@
         <div class="row justify-content.center">
             <div class="col-lg-10">
                 
-                <!-- SECCIÓN 1: FORMULARIO GENERAR OFICIO -->
                 <div class="card shadow-sm mb-5">
                     <div class="card-body p-4">
                         <h4 class="card-title mb-4"><i class="bi bi-pencil-square"></i> Generar Nuevo Oficio</h4>
@@ -78,7 +79,6 @@
 <div class="table-responsive">
     </div>
 
-                <!-- 🚨 SECCIÓN 2: LISTADO DE OFICIOS CREADOS POR ESTE USUARIO (Con Scriptlets) -->
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
                         <h4 class="card-title mb-4"><i class="bi bi-list-columns-reverse"></i> Lista de Oficios</h4>
@@ -98,9 +98,10 @@
                                 </thead>
                                 <tbody>
                                     <%
-                                        // 🚨 USAMOS SCRIPTLETS para evitar el error 500 de JSTL
+                                        // Recupera la lista de objetos Oficio del request (cargada por el Servlet).
                                         List<com.tuproyecto.Oficio> oficioList = (List<com.tuproyecto.Oficio>) request.getAttribute("oficioList");
                                         
+                                        // Lógica para iterar sobre la lista si no es nula ni vacía.
                                         if (oficioList != null && !oficioList.isEmpty()) {
                                             for (com.tuproyecto.Oficio oficio : oficioList) {
                                     %>
@@ -111,7 +112,9 @@
                                         <td><%= oficio.getAsunto() %></td>
                                         <td><%= oficio.getFecha() %></td>
                                         <td><%= oficio.getHash() %></td>
-                                        <td><a href="edit-oficio?id=<%= oficio.getIdOficioReal() %>" class="btn btn-secondary btn-sm">Editar</a></td>
+                                        <td>
+                                            <a href="edit-oficio?id=<%= oficio.getIdOficioReal() %>" class="btn btn-secondary btn-sm">Editar</a>
+                                        </td>
                                     </tr>
                                     <%
                                             }

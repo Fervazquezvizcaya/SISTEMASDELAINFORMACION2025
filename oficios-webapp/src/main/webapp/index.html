@@ -7,14 +7,17 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
+        /* Define un gradiente de fondo para el cuerpo de la página. */
         body {
             background: linear-gradient(to right, #ece9e6, #ffffff);
         }
+        /* Estilos para la tarjeta de login, sin borde y con esquinas redondeadas. */
         .login-card {
             border: none;
             border-radius: 1rem;
             transition: all 0.3s;
         }
+        /* Efecto visual al pasar el ratón sobre la tarjeta (se eleva ligeramente). */
         .login-card:hover {
             transform: translateY(-5px);
         }
@@ -54,8 +57,12 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
+        // Verifica si la URL contiene el parámetro 'error=true'.
         if (window.location.search.includes('error=true')) {
+            // Si el parámetro existe (indicando fallo en el login), se remueve la clase 'd-none'
+            // para hacer visible el div del mensaje de error.
             document.getElementById('error-message').classList.remove('d-none');
         }
     </script>

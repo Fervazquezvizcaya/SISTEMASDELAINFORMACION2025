@@ -15,7 +15,7 @@ import jakarta.servlet.http.HttpSession;
 @WebServlet("/list-oficios-user")
 public class ListOficiosByUserServlet extends HttpServlet {
 
-    // URL de la base de datos con corrección SSL/TLS
+    // URL de conexión a la base de datos (incluye corrección SSL/TLS)
     private static final String DB_URL = "jdbc:mariadb://54.242.175.198:3306/webapp_db?sslMode=disable";
 
     @Override
@@ -23,21 +23,21 @@ public class ListOficiosByUserServlet extends HttpServlet {
         
         HttpSession session = request.getSession(false);
         
-        // 1. Verificar Sesión (Seguridad)
+        // 1. VERIFICACIÓN DE SESIÓN: Asegura que el usuario esté logueado.
         if (session == null || session.getAttribute("userId") == null) {
             response.sendRedirect("index.html");
             return;
         }
 
-        // 2. Obtener Parámetros de Búsqueda
-        String query = request.getParameter("q"); // Obtener el término de búsqueda
+        // 2. OBTENER PARÁMETROS DE BÚSQUEDA (Query 'q')
+        String query = request.getParameter("q");
         
-        // 3. Obtener credenciales de entorno (Seguridad)
+        // 3. OBTENER CREDENCIALES SEGURAS DEL ENTORNO
         String dbUser = System.getenv("DB_USER"); 
         String dbPassword = System.getenv("DB_PASSWORD");
 
+        // Verificación de configuración de seguridad
         if (dbUser == null || dbPassword == null) {
-            // Error de configuración de seguridad
             response.sendRedirect("user_panel.jsp?error=db_config");
             return;
         }
@@ -51,11 +51,11 @@ public class ListOficiosByUserServlet extends HttpServlet {
             Class.forName("org.mariadb.jdbc.Driver");
             conn = DriverManager.getConnection(DB_URL, dbUser, dbPassword); 
 
-            // 🛑 CORRECCIÓN CLAVE: Sentencia SQL para búsqueda y listado global
+            // 4. PREPARACIÓN DE LA CONSULTA SQL (Listado Global + Búsqueda)
             String sql = "SELECT id_oficio, numero_oficio, persona_dirigida, area, asunto, fecha, hash_firma " +
                          "FROM oficios ";
             
-            // 🚨 LÓGICA DE BÚSQUEDA (WHERE LIKE)
+            // LÓGICA DE BÚSQUEDA: Añadir cláusula WHERE si hay un término de búsqueda.
             if (query != null && !query.trim().isEmpty()) {
                 sql += " WHERE UPPER(CAST(id_oficio AS CHAR)) LIKE ? " +
                        " OR UPPER(CAST(numero_oficio AS CHAR)) LIKE ? " +
@@ -66,14 +66,14 @@ public class ListOficiosByUserServlet extends HttpServlet {
                        " OR UPPER(hash_firma) LIKE ? ";
             }
             
-            sql += " ORDER BY id_oficio DESC"; // Ordenar para mostrar los nuevos primero
+            sql += " ORDER BY id_oficio DESC"; // Ordena por ID descendente
             
             statement = conn.prepareStatement(sql);
             
-            // 🚨 Asignar parámetros de búsqueda si existen
+            // 5. ASIGNACIÓN DE PARÁMETROS: Aplica el patrón de búsqueda a todos los campos.
             if (query != null && !query.trim().isEmpty()) {
                 String searchPattern = "%" + query.toUpperCase() + "%";
-                // Asigna el mismo patrón a todos los 7 placeholders (?)
+                // Siete placeholders (?) requieren el patrón
                 for (int i = 1; i <= 7; i++) {
                     statement.setString(i, searchPattern);
                 }
@@ -81,32 +81,34 @@ public class ListOficiosByUserServlet extends HttpServlet {
             
             result = statement.executeQuery();
 
-            // 5. Llenar la lista de oficios
+            // 6. MAPEO DE RESULTADOS: Llenar la lista de objetos Oficio.
             while (result.next()) {
-                int idOficioReal = result.getInt("id_oficio");
+                // Obtener el ID_OFICIO real (clave primaria)
+                int idOficioReal = result.getInt("id_oficio"); 
+                // Obtener el NUMERO_OFICIO (consecutivo para la vista)
                 int numeroOficio = result.getInt("numero_oficio"); 
+                
                 String personaDirigida = result.getString("persona_dirigida"); 
                 String area = result.getString("area");
                 String asunto = result.getString("asunto");
                 String fecha = result.getString("fecha");
                 String hash = result.getString("hash_firma");
 
-                // Usamos el constructor modificado (ID Real, ID Presentación, Resto)
+                // Pasar los 7 argumentos al constructor
                 oficioList.add(new Oficio(idOficioReal, numeroOficio, personaDirigida, area, asunto, fecha, hash));
             }
             
-            // 6. Establecer la lista y la query en el Request
+            // 7. TRANSFERENCIA DE CONTROL: Enviar la lista y el término de búsqueda a la vista JSP.
             request.setAttribute("oficioList", oficioList);
-            request.setAttribute("queryTerm", query); // Guarda el término para que el buscador lo muestre
-            
-            // 7. Transferir el control a la vista (JSP)
+            request.setAttribute("queryTerm", query); 
             request.getRequestDispatcher("user_panel.jsp").forward(request, response);
             
         } catch (SQLException | ClassNotFoundException e) {
             e.printStackTrace();
+            // Fallo en la conexión o consulta, redirige con error.
             response.sendRedirect("user_panel.jsp?error=db_query_failed");
         } finally {
-            // Cierre seguro de recursos
+            // 8. Cierre seguro de recursos.
             try {
                 if (result != null) result.close();
                 if (statement != null) statement.close();

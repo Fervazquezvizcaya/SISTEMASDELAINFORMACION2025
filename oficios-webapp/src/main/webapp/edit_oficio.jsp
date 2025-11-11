@@ -1,11 +1,12 @@
 <%@ page import="com.tuproyecto.Oficio" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%-- Intentar obtener el objeto Oficio que el Servlet guardó en el request --%>
+<%-- Lógica de Scriptlet: Recuperación y Validación del Objeto Oficio --%>
 <%
-    // Intentar obtener el objeto Oficio del request
+    // Recupera el objeto 'oficio' del request, previamente cargado por el Servlet (EditOficioServlet).
     com.tuproyecto.Oficio oficio = (com.tuproyecto.Oficio) request.getAttribute("oficio");
     
-    // Si el objeto es nulo (acceso directo sin ID), expulsamos al panel de usuario
+    // Bloque de seguridad: Si no se encontró el objeto Oficio (ej. ID inválido o acceso directo),
+    // se redirige al usuario a la lista principal para evitar errores.
     if (oficio == null) {
         response.sendRedirect("list-oficios-user");
         return;

@@ -9,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
+        /* CSS personalizado */
         .nav-link { cursor: pointer; }
     </style>
 </head>
@@ -51,7 +52,10 @@
                                 <hr>
                                 <form action="create-oficio" method="post">
                                     <div class="mb-3"><label for="persona" class="form-label">Persona Dirigida:</label><input type="text" class="form-control" id="persona" name="persona_dirigida" required></div>
-                                    <div class="row mb-3"><div class="col-md-8"><label for="area" class="form-label">Área:</label><input type="text" class="form-control" id="area" name="area" required></div><div class="col-md-4"><label for="fecha" class="form-label">Fecha:</label><input type="date" class="form-control" id="fecha" name="fecha" required></div></div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-8"><label for="area" class="form-label">Área:</label><input type="text" class="form-control" id="area" name="area" required></div>
+                                        <div class="col-md-4"><label for="fecha" class="form-label">Fecha:</label><input type="date" class="form-control" id="fecha" name="fecha" required></div>
+                                    </div>
                                     <div class="mb-3"><label for="asunto" class="form-label">Asunto:</label><textarea class="form-control" id="asunto" name="asunto" rows="5" required></textarea></div>
                                     <button type="submit" class="btn btn-primary">Generar Oficio</button>
                                 </form>
@@ -68,7 +72,10 @@
                                     <input type="hidden" name="action" value="add">
                                     <div class="mb-3"><label for="new_username" class="form-label">Nombre de Usuario:</label><input type="text" class="form-control" id="new_username" name="nombre_usuario" required></div>
                                     <div class="mb-3"><label for="new_password" class="form-label">Contraseña:</label><input type="password" class="form-control" id="new_password" name="password" required></div>
-                                    <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="is_admin" name="es_admin"><label class="form-check-label" for="is_admin">Hacer Administrador</label></div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="is_admin" name="es_admin">
+                                        <label class="form-check-label" for="is_admin">Hacer Administrador</label>
+                                    </div>
                                     <button type="submit" class="btn btn-success">Crear Usuario</button>
                                 </form>
                             </div>
@@ -91,37 +98,40 @@
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            <%-- Bloque Scriptlet para acceder a la lista de usuarios desde el Request --%>
                                             <%
-                                                // 🚨 CLAVE: El ListUsersServlet cargó esta lista.
+                                                // Recupera la lista de usuarios pasada por el servlet 'ListUsersServlet'.
                                                 List<com.tuproyecto.ListUsersServlet.User> userList = (List<com.tuproyecto.ListUsersServlet.User>) request.getAttribute("userList");
                                                 
+                                                // Itera sobre la lista si existe y no está vacía.
                                                 if (userList != null && !userList.isEmpty()) {
                                                     for (com.tuproyecto.ListUsersServlet.User user : userList) {
-                                                %>
-                                                <tr>
-                                                    <td><%= user.getId() %></td>
-                                                    <td><%= user.getName() %></td>
-                                                    <td><span class="badge bg-<%= user.isAdmin() ? "primary" : "secondary" %>"><%= user.isAdmin() ? "Admin" : "Usuario" %></span></td>
-                                                    <td class="text-center">
-                                                        <% if (!user.getName().equals("admin")) { %>
-                                                        <form action="manage-users" method="post" onsubmit="return confirm('¿Estás seguro de eliminar a <%= user.getName() %>?');" class="d-inline">
-                                                            <input type="hidden" name="action" value="delete">
-                                                            <input type="hidden" name="id_usuario" value="<%= user.getId() %>">
-                                                            <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
-                                                        </form>
-                                                        <% } %>
-                                                    </td>
-                                                </tr>
-                                                <%
+                                            %>
+                                            <tr>
+                                                <td><%= user.getId() %></td>
+                                                <td><%= user.getName() %></td>
+                                                <td><span class="badge bg-<%= user.isAdmin() ? "primary" : "secondary" %>"><%= user.isAdmin() ? "Admin" : "Usuario" %></span></td>
+                                                <td class="text-center">
+                                                    <%-- Condición: No permite eliminar al usuario llamado "admin" --%>
+                                                    <% if (!user.getName().equals("admin")) { %>
+                                                    <form action="manage-users" method="post" onsubmit="return confirm('¿Estás seguro de eliminar a <%= user.getName() %>?');" class="d-inline">
+                                                        <input type="hidden" name="action" value="delete">
+                                                        <input type="hidden" name="id_usuario" value="<%= user.getId() %>">
+                                                        <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
+                                                    </form>
+                                                    <% } %>
+                                                </td>
+                                            </tr>
+                                            <%
                                                     }
                                                 } else {
-                                                %>
-                                                <tr>
-                                                    <td colspan="4" class="text-center text-muted">No hay usuarios para mostrar.</td>
-                                                </tr>
-                                                <%
-                                                    }
-                                                %>
+                                            %>
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted">No hay usuarios para mostrar.</td>
+                                            </tr>
+                                            <%
+                                                }
+                                            %>
                                         </tbody>
                                     </table>
                                 </div>

@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement; 
-import java.sql.ResultSet;      
-import java.sql.SQLException;     
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -17,24 +17,29 @@ import jakarta.servlet.http.HttpSession;
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
 
-    // Se mantiene la URL con la corrección SSL/TLS
+    // Variables estáticas para la conexión a MariaDB.
     private static final String DB_HOST = "54.242.175.198"; 
     private static final String DB_NAME = "webapp_db";
+    // URL de conexión: Incluye la corrección 'sslMode=disable' para AWS.
     private static final String DB_URL = "jdbc:mariadb://" + DB_HOST + ":3306/" + DB_NAME + "?sslMode=disable";
     
+    /**
+     * Propósito: Maneja la solicitud POST del formulario de inicio de sesión.
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
 
+        // 1. OBTENER DATOS DE ENTRADA del formulario
         String username = request.getParameter("username");
         String password = request.getParameter("password");
         
-        // 🚨 SEGURIDAD: Obtiene las credenciales de las variables de entorno
+        // 2. SEGURIDAD: Leer credenciales de la DB desde las variables de entorno
         String dbUser = System.getenv("DB_USER"); 
         String dbPassword = System.getenv("DB_PASSWORD");
 
-        // Verificación de seguridad
+        // Verificación de seguridad: Si las credenciales de entorno no están cargadas.
         if (dbUser == null || dbPassword == null) {
             response.sendRedirect("error_configuracion.html");
             return; 
@@ -42,13 +47,14 @@ public class LoginServlet extends HttpServlet {
 
         Connection conn = null;
         PreparedStatement statement = null;
-        ResultSet result = null; // Declaración fuera del try
+        ResultSet result = null; 
 
         try {
+            // 3. CONEXIÓN A DB: Cargar Driver y establecer conexión segura
             Class.forName("org.mariadb.jdbc.Driver");
             conn = DriverManager.getConnection(DB_URL, dbUser, dbPassword); 
 
-            // Consulta SQL segura (utiliza SHA2 para comparar el hash)
+            // 4. CONSULTA SQL: Compara el input (cifrado con SHA2) contra el hash almacenado.
             String sql = "SELECT es_admin, id_usuario FROM usuarios WHERE nombre_usuario = ? AND password = SHA2(?, 256)";
             
             statement = conn.prepareStatement(sql);
@@ -58,29 +64,35 @@ public class LoginServlet extends HttpServlet {
             result = statement.executeQuery(); 
 
             if (result.next()) {
+                // 5. INICIO DE SESIÓN EXITOSO: Obtener rol y ID
                 boolean esAdmin = result.getBoolean("es_admin");
                 int userId = result.getInt("id_usuario");
 
+                // 6. CREACIÓN DE SESIÓN: Guardar el estado y la identidad del usuario
                 HttpSession session = request.getSession();
                 session.setAttribute("username", username);
                 session.setAttribute("isAdmin", esAdmin);
                 session.setAttribute("userId", userId);
 
-                // REDIRECCIÓN CORREGIDA: Apunta al servlet de carga de datos
+                // 7. REDIRECCIÓN CONDICIONAL: Enviar al servlet que carga los datos del panel.
                 if (esAdmin) {
-                    response.sendRedirect("list-oficios-user"); // Correcto: Llama al Servlet de carga de datos
+                    // Si es Admin: Carga usuarios y oficios.
+                    response.sendRedirect("list-users"); 
                 } else {
+                    // Si es usuario común: Carga solo sus oficios.
                     response.sendRedirect("list-oficios-user"); 
                 }
             } else {
-                response.sendRedirect("index.html?error=true"); // Contraseña incorrecta
+                // 8. FALLO DE AUTENTICACIÓN: Redirigir al login con mensaje de error.
+                response.sendRedirect("index.html?error=true"); 
             }
 
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
-            response.sendRedirect("error_configuracion.html"); // Fallo de DB/Conexión
+            // 9. ERROR FATAL: Fallo en la conexión a DB.
+            response.sendRedirect("error_configuracion.html"); 
         } finally {
-            // Cierre seguro de recursos
+            // 10. CIERRE SEGURO: Asegurar que todos los recursos de la DB se cierren.
             try {
                 if (result != null) result.close();
                 if (statement != null) statement.close();
