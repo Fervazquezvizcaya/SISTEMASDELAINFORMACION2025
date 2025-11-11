@@ -29,11 +29,15 @@ public class ListOficiosByUserServlet extends HttpServlet {
             return;
         }
 
-        // 2. Obtener credenciales de entorno (Seguridad)
+        // 2. Obtener Parámetros de Búsqueda
+        String query = request.getParameter("q"); // Obtener el término de búsqueda
+        
+        // 3. Obtener credenciales de entorno (Seguridad)
         String dbUser = System.getenv("DB_USER"); 
         String dbPassword = System.getenv("DB_PASSWORD");
 
         if (dbUser == null || dbPassword == null) {
+            // Error de configuración de seguridad
             response.sendRedirect("user_panel.jsp?error=db_config");
             return;
         }
@@ -47,34 +51,55 @@ public class ListOficiosByUserServlet extends HttpServlet {
             Class.forName("org.mariadb.jdbc.Driver");
             conn = DriverManager.getConnection(DB_URL, dbUser, dbPassword); 
 
-            // 🚨 CORRECCIÓN CLAVE 1: SELECCIONAR id_oficio y numero_oficio
+            // 🛑 CORRECCIÓN CLAVE: Sentencia SQL para búsqueda y listado global
             String sql = "SELECT id_oficio, numero_oficio, persona_dirigida, area, asunto, fecha, hash_firma " +
-                         "FROM oficios ORDER BY id_oficio DESC"; 
+                         "FROM oficios ";
+            
+            // 🚨 LÓGICA DE BÚSQUEDA (WHERE LIKE)
+            if (query != null && !query.trim().isEmpty()) {
+                sql += " WHERE UPPER(CAST(id_oficio AS CHAR)) LIKE ? " +
+                       " OR UPPER(CAST(numero_oficio AS CHAR)) LIKE ? " +
+                       " OR UPPER(persona_dirigida) LIKE ? " +
+                       " OR UPPER(area) LIKE ? " +
+                       " OR UPPER(asunto) LIKE ? " +
+                       " OR UPPER(fecha) LIKE ? " +
+                       " OR UPPER(hash_firma) LIKE ? ";
+            }
+            
+            sql += " ORDER BY id_oficio DESC"; // Ordenar para mostrar los nuevos primero
             
             statement = conn.prepareStatement(sql);
+            
+            // 🚨 Asignar parámetros de búsqueda si existen
+            if (query != null && !query.trim().isEmpty()) {
+                String searchPattern = "%" + query.toUpperCase() + "%";
+                // Asigna el mismo patrón a todos los 7 placeholders (?)
+                for (int i = 1; i <= 7; i++) {
+                    statement.setString(i, searchPattern);
+                }
+            }
+            
             result = statement.executeQuery();
 
-            // 🚨 CORRECCIÓN CLAVE 2: Llenar la lista con ambos IDs
+            // 5. Llenar la lista de oficios
             while (result.next()) {
-                // Obtener la clave primaria real (con saltos)
-                int idOficioReal = result.getInt("id_oficio"); 
-                // Obtener el número consecutivo (sin saltos)
+                int idOficioReal = result.getInt("id_oficio");
                 int numeroOficio = result.getInt("numero_oficio"); 
-                
                 String personaDirigida = result.getString("persona_dirigida"); 
                 String area = result.getString("area");
                 String asunto = result.getString("asunto");
                 String fecha = result.getString("fecha");
                 String hash = result.getString("hash_firma");
 
-                // 🚨 Crear objeto Oficio: (ID Real, ID para la tabla, resto de campos)
+                // Usamos el constructor modificado (ID Real, ID Presentación, Resto)
                 oficioList.add(new Oficio(idOficioReal, numeroOficio, personaDirigida, area, asunto, fecha, hash));
             }
             
-            // 5. Establecer la lista en el Request
+            // 6. Establecer la lista y la query en el Request
             request.setAttribute("oficioList", oficioList);
-
-            // 6. Transferir el control a la vista (JSP)
+            request.setAttribute("queryTerm", query); // Guarda el término para que el buscador lo muestre
+            
+            // 7. Transferir el control a la vista (JSP)
             request.getRequestDispatcher("user_panel.jsp").forward(request, response);
             
         } catch (SQLException | ClassNotFoundException e) {

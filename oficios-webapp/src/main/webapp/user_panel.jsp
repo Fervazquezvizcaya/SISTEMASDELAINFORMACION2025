@@ -62,6 +62,22 @@
                     </div>
                 </div>
 
+                <form action="list-oficios-user" method="get" class="mb-4">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Buscar por ID, Persona, Área, Asunto o Hash" 
+                            name="q" id="search-query" value="<%= request.getParameter("q") != null ? request.getParameter("q") : "" %>">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        <a href="list-oficios-user" class="btn btn-outline-danger">
+                            <i class="bi bi-x-lg"></i> Limpiar
+                        </a>
+                    </div>
+                </form>
+
+<div class="table-responsive">
+    </div>
+
                 <!-- 🚨 SECCIÓN 2: LISTADO DE OFICIOS CREADOS POR ESTE USUARIO (Con Scriptlets) -->
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
