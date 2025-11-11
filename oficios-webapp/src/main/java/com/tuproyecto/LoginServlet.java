@@ -68,7 +68,7 @@ public class LoginServlet extends HttpServlet {
 
                 // REDIRECCIÓN CORREGIDA: Apunta al servlet de carga de datos
                 if (esAdmin) {
-                    response.sendRedirect("list-users"); // Correcto: Llama al Servlet de carga de datos
+                    response.sendRedirect("list-oficios-user"); // Correcto: Llama al Servlet de carga de datos
                 } else {
                     response.sendRedirect("list-oficios-user"); 
                 }

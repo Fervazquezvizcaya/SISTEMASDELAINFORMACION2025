@@ -65,14 +65,14 @@
                 <!-- 🚨 SECCIÓN 2: LISTADO DE OFICIOS CREADOS POR ESTE USUARIO (Con Scriptlets) -->
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <h4 class="card-title mb-4"><i class="bi bi-list-columns-reverse"></i> Mis Oficios Creados</h4>
+                        <h4 class="card-title mb-4"><i class="bi bi-list-columns-reverse"></i> Lista de Oficios</h4>
                         <hr>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle table-sm">
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>Dirigido A</th>
+                                        <th>Persona</th>
                                         <th>Área</th>
                                         <th>Asunto</th>
                                         <th>Fecha</th>
@@ -95,7 +95,7 @@
                                         <td><%= oficio.getAsunto() %></td>
                                         <td><%= oficio.getFecha() %></td>
                                         <td><%= oficio.getHash() %></td>
-                                        <td><a href="edit-oficio?id=<%= oficio.getId() %>" class="btn btn-secondary btn-sm">Editar</a></td>
+                                        <td><a href="edit-oficio?id=<%= oficio.getIdOficioReal() %>" class="btn btn-secondary btn-sm">Editar</a></td>
                                     </tr>
                                     <%
                                             }

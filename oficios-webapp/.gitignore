@@ -17,7 +17,7 @@
 *.zip
 
 # ===============================================
-#  ARCHIVOS SENSIBLES Y DE BASE DE DATOS (CRÍTICO)
+# ARCHIVOS SENSIBLES Y DE BASE DE DATOS (CRÍTICO)
 # ===============================================
 
 # 1. Archivo de esquema con credenciales iniciales

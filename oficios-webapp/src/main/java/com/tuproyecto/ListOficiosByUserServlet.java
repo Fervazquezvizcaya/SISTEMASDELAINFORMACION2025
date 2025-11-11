@@ -34,7 +34,6 @@ public class ListOficiosByUserServlet extends HttpServlet {
         String dbPassword = System.getenv("DB_PASSWORD");
 
         if (dbUser == null || dbPassword == null) {
-            // Error de configuración de seguridad
             response.sendRedirect("user_panel.jsp?error=db_config");
             return;
         }
@@ -48,33 +47,34 @@ public class ListOficiosByUserServlet extends HttpServlet {
             Class.forName("org.mariadb.jdbc.Driver");
             conn = DriverManager.getConnection(DB_URL, dbUser, dbPassword); 
 
-            // 🛑 CORRECCIÓN CLAVE: Seleccionar TODOS los oficios (Eliminamos el filtro WHERE)
-            String sql = "SELECT id_oficio, persona_dirigida, area, asunto, fecha, hash_firma " +
+            // 🚨 CORRECCIÓN CLAVE 1: SELECCIONAR id_oficio y numero_oficio
+            String sql = "SELECT id_oficio, numero_oficio, persona_dirigida, area, asunto, fecha, hash_firma " +
                          "FROM oficios ORDER BY id_oficio DESC"; 
             
             statement = conn.prepareStatement(sql);
-            // 🛑 NO SE USA: statement.setInt(1, userId); 
             result = statement.executeQuery();
 
-            // 4. Llenar la lista de oficios
+            // 🚨 CORRECCIÓN CLAVE 2: Llenar la lista con ambos IDs
             while (result.next()) {
-                int id = result.getInt("id_oficio");
-                // Usamos persona_dirigida que es el campo correcto para "Dirigido A"
+                // Obtener la clave primaria real (con saltos)
+                int idOficioReal = result.getInt("id_oficio"); 
+                // Obtener el número consecutivo (sin saltos)
+                int numeroOficio = result.getInt("numero_oficio"); 
+                
                 String personaDirigida = result.getString("persona_dirigida"); 
                 String area = result.getString("area");
                 String asunto = result.getString("asunto");
                 String fecha = result.getString("fecha");
                 String hash = result.getString("hash_firma");
 
-                // El constructor Oficio debe ser el del archivo Oficio.java
-                oficioList.add(new Oficio(id, personaDirigida, area, asunto, fecha, hash));
+                // 🚨 Crear objeto Oficio: (ID Real, ID para la tabla, resto de campos)
+                oficioList.add(new Oficio(idOficioReal, numeroOficio, personaDirigida, area, asunto, fecha, hash));
             }
             
             // 5. Establecer la lista en el Request
             request.setAttribute("oficioList", oficioList);
 
             // 6. Transferir el control a la vista (JSP)
-            // (user_panel.jsp debe estar listo para recibir y mostrar la tabla de oficios)
             request.getRequestDispatcher("user_panel.jsp").forward(request, response);
             
         } catch (SQLException | ClassNotFoundException e) {
@@ -91,6 +91,4 @@ public class ListOficiosByUserServlet extends HttpServlet {
             }
         }
     }
-    
-    // NOTA: La clase Oficio debe estar en un archivo separado Oficio.java
 }

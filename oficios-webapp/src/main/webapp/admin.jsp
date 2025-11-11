@@ -1,6 +1,5 @@
-<%@ page import="java.util.List, com.tuproyecto.ListUsersServlet.User" %>
+<%@ page import="java.util.List, com.tuproyecto.ListUsersServlet.User, com.tuproyecto.Oficio" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %> 
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -38,6 +37,7 @@
                     <a class="list-group-item list-group-item-action active" data-bs-toggle="list" href="#oficio" role="tab"><i class="bi bi-file-earmark-plus"></i> Generar Oficio</a>
                     <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#add-user" role="tab"><i class="bi bi-person-plus"></i> Añadir Usuario</a>
                     <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#manage-users" role="tab"><i class="bi bi-people"></i> Gestionar Usuarios</a>
+                    <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#listado-oficios" role="tab"><i class="bi bi-list-columns-reverse"></i> Ver Oficios</a>
                 </div>
             </div>
 
@@ -91,26 +91,79 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <c:if test="${not empty userList}">
-                                                <c:forEach var="user" items="${userList}">
+                                            <%
+                                                // 🚨 CLAVE: El ListUsersServlet cargó esta lista.
+                                                List<com.tuproyecto.ListUsersServlet.User> userList = (List<com.tuproyecto.ListUsersServlet.User>) request.getAttribute("userList");
+                                                
+                                                if (userList != null && !userList.isEmpty()) {
+                                                    for (com.tuproyecto.ListUsersServlet.User user : userList) {
+                                                %>
+                                                <tr>
+                                                    <td><%= user.getId() %></td>
+                                                    <td><%= user.getName() %></td>
+                                                    <td><span class="badge bg-<%= user.isAdmin() ? "primary" : "secondary" %>"><%= user.isAdmin() ? "Admin" : "Usuario" %></span></td>
+                                                    <td class="text-center">
+                                                        <% if (!user.getName().equals("admin")) { %>
+                                                        <form action="manage-users" method="post" onsubmit="return confirm('¿Estás seguro de eliminar a <%= user.getName() %>?');" class="d-inline">
+                                                            <input type="hidden" name="action" value="delete">
+                                                            <input type="hidden" name="id_usuario" value="<%= user.getId() %>">
+                                                            <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
+                                                        </form>
+                                                        <% } %>
+                                                    </td>
+                                                </tr>
+                                                <%
+                                                    }
+                                                } else {
+                                                %>
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted">No hay usuarios para mostrar.</td>
+                                                </tr>
+                                                <%
+                                                    }
+                                                %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="listado-oficios" role="tabpanel">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <h4 class="card-title"><i class="bi bi-file-earmark-bar-graph"></i> Lista de Oficios Creados</h4>
+                                <hr>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Dirigido A</th>
+                                                <th>Área</th>
+                                                <th>Fecha</th>
+                                                <th>Hash (Integridad)</th>
+                                                <th>Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <c:if test="${not empty oficioList}">
+                                                <c:forEach var="oficio" items="${oficioList}">
                                                     <tr>
-                                                        <td><c:out value="${user.id}"/></td>
-                                                        <td><c:out value="${user.name}"/></td>
-                                                        <td><span class="badge bg-${user.isAdmin() ? 'primary' : 'secondary'}">${user.isAdmin() ? 'Admin' : 'Usuario'}</span></td>
-                                                        <td class="text-center">
-                                                            <c:if test="${user.id != 1}"> <form action="manage-users" method="post" onsubmit="return confirm('¿Estás seguro de eliminar a ${user.name}?');" class="d-inline">
-                                                                    <input type="hidden" name="action" value="delete">
-                                                                    <input type="hidden" name="id_usuario" value="${user.id}">
-                                                                    <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
-                                                                </form>
-                                                            </c:if>
+                                                        <td><c:out value="${oficio.id}"/></td>
+                                                        <td><c:out value="${oficio.personaDirigida}"/></td>
+                                                        <td><c:out value="${oficio.area}"/></td>
+                                                        <td><c:out value="${oficio.fecha}"/></td>
+                                                        <td style="font-size: 0.75rem;"><c:out value="${oficio.hash.substring(0, 10)}..."/></td>
+                                                        <td>
+                                                            <a href="edit-oficio?id=${oficio.id}" class="btn btn-secondary btn-sm"><i class="bi bi-pencil"></i> Editar</a>
                                                         </td>
                                                     </tr>
                                                 </c:forEach>
                                             </c:if>
-                                            <c:if test="${empty userList}">
+                                            <c:if test="${empty oficioList}">
                                                 <tr>
-                                                    <td colspan="4" class="text-center text-muted">No hay usuarios para mostrar.</td>
+                                                    <td colspan="6" class="text-center text-muted">No hay oficios registrados.</td>
                                                 </tr>
                                             </c:if>
                                         </tbody>
@@ -119,6 +172,7 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
