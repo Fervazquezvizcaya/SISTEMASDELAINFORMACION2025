@@ -70,7 +70,7 @@ public class LoginServlet extends HttpServlet {
                 if (esAdmin) {
                     response.sendRedirect("list-users"); // Correcto: Llama al Servlet de carga de datos
                 } else {
-                    response.sendRedirect("user_panel.jsp"); 
+                    response.sendRedirect("list-oficios-user"); 
                 }
             } else {
                 response.sendRedirect("index.html?error=true"); // Contraseña incorrecta

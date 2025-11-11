@@ -1,3 +1,4 @@
+<%@ page import="java.util.List, com.tuproyecto.Oficio" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html lang="es">
@@ -8,9 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        body {
-            background-color: #f8f9fa;
-        }
+        body { background-color: #f8f9fa; }
     </style>
 </head>
 <body>
@@ -29,11 +28,14 @@
     </nav>
 
     <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="card shadow-sm">
+        <div class="row justify-content.center">
+            <div class="col-lg-10">
+                
+                <!-- SECCIÓN 1: FORMULARIO GENERAR OFICIO -->
+                <div class="card shadow-sm mb-5">
                     <div class="card-body p-4">
                         <h4 class="card-title mb-4"><i class="bi bi-pencil-square"></i> Generar Nuevo Oficio</h4>
+                        <hr>
                         <form action="create-oficio" method="post">
                             <div class="mb-3">
                                 <label for="persona" class="form-label">Persona Dirigida:</label>
@@ -57,6 +59,57 @@
                                 <button type="submit" class="btn btn-primary btn-lg">Generar Oficio</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+
+                <!-- 🚨 SECCIÓN 2: LISTADO DE OFICIOS CREADOS POR ESTE USUARIO (Con Scriptlets) -->
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <h4 class="card-title mb-4"><i class="bi bi-list-columns-reverse"></i> Mis Oficios Creados</h4>
+                        <hr>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Dirigido A</th>
+                                        <th>Área</th>
+                                        <th>Asunto</th>
+                                        <th>Fecha</th>
+                                        <th>Hash</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <%
+                                        // 🚨 USAMOS SCRIPTLETS para evitar el error 500 de JSTL
+                                        List<com.tuproyecto.Oficio> oficioList = (List<com.tuproyecto.Oficio>) request.getAttribute("oficioList");
+                                        
+                                        if (oficioList != null && !oficioList.isEmpty()) {
+                                            for (com.tuproyecto.Oficio oficio : oficioList) {
+                                    %>
+                                    <tr>
+                                        <td><%= oficio.getId() %></td>
+                                        <td><%= oficio.getPersonaDirigida() %></td>
+                                        <td><%= oficio.getArea() %></td>
+                                        <td><%= oficio.getAsunto() %></td>
+                                        <td><%= oficio.getFecha() %></td>
+                                        <td><%= oficio.getHash() %></td>
+                                        <td><a href="edit-oficio?id=<%= oficio.getId() %>" class="btn btn-secondary btn-sm">Editar</a></td>
+                                    </tr>
+                                    <%
+                                            }
+                                        } else {
+                                    %>
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">Aún no has creado ningún oficio.</td>
+                                    </tr>
+                                    <%
+                                        }
+                                    %>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

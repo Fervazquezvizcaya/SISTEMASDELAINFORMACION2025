@@ -1,5 +1,6 @@
 <%@ page import="java.util.List, com.tuproyecto.ListUsersServlet.User" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %> 
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -90,37 +91,28 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <%
-                                                // 🚨 CLAVE: El ListUsersServlet cargó esta lista.
-                                                List<com.tuproyecto.ListUsersServlet.User> userList = (List<com.tuproyecto.ListUsersServlet.User>) request.getAttribute("userList");
-                                                
-                                                if (userList != null && !userList.isEmpty()) {
-                                                    for (com.tuproyecto.ListUsersServlet.User user : userList) {
-                                            %>
-                                            <tr>
-                                                <td><%= user.getId() %></td>
-                                                <td><%= user.getName() %></td>
-                                                <td><span class="badge bg-<%= user.isAdmin() ? "primary" : "secondary" %>"><%= user.isAdmin() ? "Admin" : "Usuario" %></span></td>
-                                                <td class="text-center">
-                                                    <% if (!user.getName().equals("admin")) { %>
-                                                    <form action="manage-users" method="post" onsubmit="return confirm('¿Estás seguro de eliminar a <%= user.getName() %>?');" class="d-inline">
-                                                        <input type="hidden" name="action" value="delete">
-                                                        <input type="hidden" name="id_usuario" value="<%= user.getId() %>">
-                                                        <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
-                                                    </form>
-                                                    <% } %>
-                                                </td>
-                                            </tr>
-                                            <%
-                                                    }
-                                                } else {
-                                            %>
-                                            <tr>
-                                                <td colspan="4" class="text-center text-muted">No hay usuarios para mostrar.</td>
-                                            </tr>
-                                            <%
-                                                }
-                                            %>
+                                            <c:if test="${not empty userList}">
+                                                <c:forEach var="user" items="${userList}">
+                                                    <tr>
+                                                        <td><c:out value="${user.id}"/></td>
+                                                        <td><c:out value="${user.name}"/></td>
+                                                        <td><span class="badge bg-${user.isAdmin() ? 'primary' : 'secondary'}">${user.isAdmin() ? 'Admin' : 'Usuario'}</span></td>
+                                                        <td class="text-center">
+                                                            <c:if test="${user.id != 1}"> <form action="manage-users" method="post" onsubmit="return confirm('¿Estás seguro de eliminar a ${user.name}?');" class="d-inline">
+                                                                    <input type="hidden" name="action" value="delete">
+                                                                    <input type="hidden" name="id_usuario" value="${user.id}">
+                                                                    <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
+                                                                </form>
+                                                            </c:if>
+                                                        </td>
+                                                    </tr>
+                                                </c:forEach>
+                                            </c:if>
+                                            <c:if test="${empty userList}">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted">No hay usuarios para mostrar.</td>
+                                                </tr>
+                                            </c:if>
                                         </tbody>
                                     </table>
                                 </div>
